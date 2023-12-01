@@ -1,7 +1,7 @@
 fn main() {
     // Init
     let data = std::fs::read_to_string("input.txt").unwrap();
-    let lines: Vec<&str> = data.split("\r\n").collect();
+    let lines: Vec<&str> = data.split("\n").collect();
 
     // Step 1
     let mut ans: Vec<i32> = vec![];
