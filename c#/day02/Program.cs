@@ -3,18 +3,17 @@ var maxGreen = 13;
 var maxBlue = 14;
 
 var sum = 0;
-var leastProd = 0;
+var atLeastProd = 0;
 
 var lines = File.ReadAllLines("input.txt");
 foreach (var line in lines) {
-  var goodID = true;
   var gameId = int.Parse(line.Split(':')[0].Split(' ')[1]);
   var rest = line.Split(':')[1];
   var games = rest.Split(';');
 
-  var leastRed = 0;
-  var leastGreen = 0;
-  var leastBlue = 0;
+  var highRed = 0;
+  var highGreen = 0;
+  var highBlue = 0;
 
   foreach (var game in games) {
     var data = game.Split(',');
@@ -23,29 +22,20 @@ foreach (var line in lines) {
       var color = d.Split(' ')[1];
       switch (color) {
         case "red":
-          leastRed = Math.Max(leastRed, amount);
-          if (amount > maxRed) {
-            goodID = false;
-          }
+          highRed = Math.Max(highRed, amount);
           break;
         case "green":
-          leastGreen = Math.Max(leastGreen, amount);
-          if (amount > maxGreen) {
-            goodID = false;
-          }
+          highGreen = Math.Max(highGreen, amount);
         break;
         case "blue":
-          leastBlue = Math.Max(leastBlue, amount);
-          if (amount > maxBlue) {
-            goodID = false;
-          }
+          highBlue = Math.Max(highBlue, amount);
         break;
       }
     }
   }
-  leastProd += leastRed * leastGreen * leastBlue;
-  if (goodID)
+  atLeastProd += highRed * highGreen * highBlue;
+  if (highRed <= maxRed && highGreen <= maxGreen && highBlue <= maxBlue)
     sum += gameId;
 }
 Console.WriteLine(sum);
-Console.WriteLine(leastProd);
+Console.WriteLine(atLeastProd);
