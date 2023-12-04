@@ -1,13 +1,9 @@
 ﻿var lines = File.ReadAllLines("input.txt");
 int sum = 0;
-List<int> cardAmounts = [];
-for (var i = 0; i < lines.Length; i++) {
-  cardAmounts.Add(1);
-}
+List<int> cardAmounts = lines.Select(l => 1).ToList();
+
 var current_card_index = 0;
 foreach (var line in lines) {
-  var cardSide = line.Split(':')[0];
-  var cardID = int.Parse(cardSide.Replace(" ", "").Replace("Card", ""));
   var numberSide = line.Split(':')[1];
   var winning = numberSide.Split('|')[0].Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
   var numbers = numberSide.Split('|')[1].Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
