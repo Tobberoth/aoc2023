@@ -353,3 +353,6 @@ MigrationBackup/
 target/
 Cargo.lock
 **/*.rs.bk
+
+# Exclude input since it's apparently not allowed
+input.txt
