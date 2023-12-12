@@ -1,26 +1,36 @@
-﻿var lines = File.ReadAllLines("input.txt").ToList();
+﻿var doStep2 = false; // Change do run step 2
+var lines = File.ReadAllLines("input.txt").ToList();
 lines = lines.Where(l => l.Length > 5).ToList();
-Dictionary<(string line, int group), int> GetAcceptedPositionsMemo = [];
-var total = 0;
+Dictionary<(string line, int group), long> GetAcceptedPositionsMemo = [];
+Dictionary<(string line, string groupKey), long> GetArrangementsMemo = [];
+long total = 0;
 foreach (var line in lines) {
   var condition = line.Split(' ')[0];
+  var initCondition = condition;
   var groups = line.Split(" ")[1].Split(",").Select(int.Parse).ToList();
+  List<int> initGroups = [..groups];
+  if (doStep2) {
+    for (var i = 0; i < 4; i++) {
+      condition += "?" + initCondition;
+      groups = groups.Concat(initGroups).ToList();
+    }
+  }
   var arrangements = GetArrangements(condition, groups);
   total += arrangements;
-  Console.WriteLine(arrangements);
-  //Console.WriteLine($"{condition} {string.Join(",", groups)} {arrangements}");
 }
 Console.WriteLine(total);
 
-int GetArrangements(string line, List<int> groups) {
+long GetArrangements(string line, List<int> groups) {
+  var groupKey = string.Join(",", groups);
+  if (GetArrangementsMemo.ContainsKey((line, groupKey)))
+    return GetArrangementsMemo[(line, groupKey)];
   if (groups.Count == 1)
     return GetAcceptedPositions(line, groups[0]);
 
   var first = groups[0];
   var rest = groups[1..];
 
-  // for all accepted positions of first
-  var sum = 0;
+  long sum = 0;
   var foundFill = false;
   for (var i = 0; i < line.Length; i++) {
     var positionOk = IsPositionOk(line[i..], first);
@@ -35,11 +45,11 @@ int GetArrangements(string line, List<int> groups) {
     if (line[i] == '#')
       break; // Found a guaranteed hit, can't go further
   }
-  // add results from recursively calling rest of line with rest of groups
+  GetArrangementsMemo.Add((line, groupKey), sum);
   return sum;
 }
 
-int GetAcceptedPositions(string line, int group) {
+long GetAcceptedPositions(string line, int group) {
   if (line.Length < group) return 0;
 
   if (GetAcceptedPositionsMemo.ContainsKey((line, group)))
@@ -55,7 +65,7 @@ int GetAcceptedPositions(string line, int group) {
   if (line == "") return 0;
   if (GetAcceptedPositionsMemo.ContainsKey((line, group)))
     return GetAcceptedPositionsMemo[(line, group)];
-  var sum = 0;
+  long sum = 0;
   if (IsPositionOk(line, group)) {
     sum++;
   }
