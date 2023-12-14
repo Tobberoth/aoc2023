@@ -1,12 +1,23 @@
-﻿Dictionary<string, (List<List<char>> newMap, int load)> MapToLoad = [];
+﻿int StartLoop = -1;
+Dictionary<string, (string map, int load)> MapToLoad = [];
+List<string> StateLog = [];
 const long CYCLE_AMOUNT = 1_000_000_000;
 var Map = File.ReadAllLines("input.txt").Select(l => l.ToList()).ToList();
 for (int c = 0; c < CYCLE_AMOUNT; c++) {
   Cycle(ref Map);
+  if (StartLoop != -1) break;
 }
+Console.WriteLine("Startloop: " + StartLoop);
+var loopLength = (StateLog.Count - StartLoop);
+Console.WriteLine("Loop length: " + loopLength);
+var modulo = (int)((CYCLE_AMOUNT-StartLoop) % loopLength);
+Console.WriteLine("Modulo: " + modulo);
+Console.WriteLine(MapToLoad[StateLog[modulo+StartLoop-1]].load);
+/*
 PrintMap(Map);
 Console.WriteLine(MapToLoad.Count);
 Console.WriteLine(CalculateLoad(Map));
+*/
 
 int CalculateLoad(List<List<char>> map) {
   return GetAllRocks(map, "north").ToList().Select(c => Math.Abs(c.y - map.Count)).Sum();
@@ -66,16 +77,27 @@ long Cycle(ref List<List<char>> map) {
   var northLoad = 0;
   var mapstring = string.Join("|", map.Select(l => string.Join("", l)));
   if (MapToLoad.ContainsKey(mapstring)) {
-    map = MapToLoad[mapstring].newMap;
+    if (StartLoop == -1)
+      StartLoop = StateLog.IndexOf(mapstring);
+    map = StringToMap(MapToLoad[mapstring].map);
     return MapToLoad[mapstring].load;
   }
+  StateLog.Add(mapstring);
   RollNorth(map);
   RollWest(map);
   RollSouth(map);
   RollEast(map);
   northLoad = CalculateLoad(map);
-  MapToLoad.Add(mapstring, ([..map], northLoad));
+  MapToLoad.Add(mapstring, (MapToString(map), northLoad));
   return northLoad;
+}
+
+List<List<char>> StringToMap(string input) {
+  return input.Split("|").Select(l => l.ToList()).ToList();
+}
+
+string MapToString(List<List<char>> map) {
+  return string.Join("|", map.Select(l => string.Join("", l)));
 }
 
 void RollDir(List<List<char>> map, (int x, int y) rock, int deltaX, int deltaY) {
