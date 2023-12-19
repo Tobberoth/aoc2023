@@ -3,28 +3,110 @@ var rules = lines
   .Where(l => !l.StartsWith('{') && !string.IsNullOrWhiteSpace(l))
   .Select(StringToWorkflow)
   .ToList();
-var parts = lines.Where(l => l.StartsWith('{')).Select(StringToPart).ToList();
-List<Part> A = [];
-List<Part> R = [];
 
+// STEP 1
+var parts = lines.Where(l => l.StartsWith('{')).Select(StringToPart).ToList();
+List<Part> listA = [];
 var currentRule = rules.First(r => r.Name == "in");
 foreach (var part in parts) {
   while (true) {
     var next = currentRule.Run(part);
     if (next == "A") {
-      A.Add(part);
+      listA.Add(part);
       currentRule = rules.First(r => r.Name == "in");
       break;
     } else if (next == "R") {
-      R.Add(part);
+      // No need to save rejected, just restart
       currentRule = rules.First(r => r.Name == "in");
       break;
     } else
       currentRule = rules.First(r => r.Name == next);
   }
 }
+Console.WriteLine("Step 1: " + listA.Sum(p => p.X + p.M + p.A + p.S));
 
-Console.WriteLine(A.Sum(p => p.X + p.M + p.A + p.S));
+// STEP 2
+var inRule = rules.First(r => r.Name == "in");
+var allAcceptedBroadRules = GetBroadRules(
+  inRule,
+  new BroadRule(1, 4001, 1, 4001, 1, 4001, 1, 4001, ' ')).Where(r => r.Target == 'A').ToList();
+
+long sum = allAcceptedBroadRules.Select(r =>
+  (r.EndingX - r.StartingX) *
+  (r.EndingM - r.StartingM) *
+  (r.EndingA - r.StartingA) *
+  (r.EndingS - r.StartingS)
+).Sum();
+Console.WriteLine("Step 2: " + sum);
+
+
+IEnumerable<BroadRule> GetBroadRules(Workflow wf, BroadRule init) {
+  var subRules = wf.Rule.Split(',');
+  foreach (var subRule in subRules) {
+    if (subRule.Contains(':')) {
+      var target = subRule.Split(':')[1];
+      var condition = subRule.Split(':')[0];
+
+      var param = "";
+      var value = 0;
+      var starting = false;
+      if (condition.Contains('<')) {
+        param = condition.Split('<')[0];
+        value = int.Parse(condition.Split('<')[1]);
+      } else {
+        param = condition.Split('>')[0];
+        value = int.Parse(condition.Split('>')[1]);
+        starting = true;
+      }
+
+      var newBroadRule = new BroadRule(
+        StartingX: param == "x" && starting ? value+1 : init.StartingX, 
+        EndingX: param == "x" && !starting ? value : init.EndingX,
+        StartingM: param == "m" && starting ? value+1 : init.StartingM,
+        EndingM: param == "m" && !starting ? value : init.EndingM,
+        StartingA: param == "a" && starting ? value+1 : init.StartingA,
+        EndingA: param == "a" && !starting ? value : init.EndingA,
+        StartingS: param == "s" && starting ? value+1 : init.StartingS,
+        EndingS: param == "s" && !starting ? value : init.EndingS,
+        Target: target[0]
+      );
+      init = new BroadRule(
+        StartingX: param == "x" && !starting ? value : init.StartingX, 
+        EndingX: param == "x" && starting ? value+1 : init.EndingX,
+        StartingM: param == "m" && !starting ? value : init.StartingM,
+        EndingM: param == "m" && starting ? value+1 : init.EndingM,
+        StartingA: param == "a" && !starting ? value : init.StartingA,
+        EndingA: param == "a" && starting ? value+1 : init.EndingA,
+        StartingS: param == "s" && !starting ? value : init.StartingS,
+        EndingS: param == "s" && starting ? value+1 : init.EndingS,
+        Target: ' '
+      );
+
+      if (target == "A" || target == "R") {
+        yield return newBroadRule;
+      } else {
+        var subBroadRules = GetBroadRules(rules.First(r => r.Name == target), newBroadRule);
+        foreach (var subBroadRule in subBroadRules)
+          yield return subBroadRule;
+      }
+    } else {
+      var target = subRule;
+      if (target == "A" || target == "R") {
+        yield return new BroadRule(
+          init.StartingX, init.EndingX,
+          init.StartingM, init.EndingM,
+          init.StartingA, init.EndingA,
+          init.StartingS, init.EndingS,
+          target[0]
+        );
+      } else {
+        var subBroadRules = GetBroadRules(rules.First(r => r.Name == target), init);
+        foreach (var subBroadRule in subBroadRules)
+          yield return subBroadRule;
+      }
+    }
+  }
+}
 
 static Workflow StringToWorkflow(string input) {
   return new Workflow {
@@ -83,3 +165,11 @@ class Workflow {
 }
 
 record Part(int X, int M, int A, int S);
+
+record BroadRule(
+  long StartingX, long EndingX,
+  long StartingM, long EndingM,
+  long StartingA, long EndingA,
+  long StartingS, long EndingS,
+  char Target
+);
